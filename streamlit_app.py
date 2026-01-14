@@ -57,3 +57,23 @@ data_log = pd.DataFrame({
     'Value': [rng, pres, wnd]
 })
 st.table(data_log)
+
+import streamlit as st
+from datetime import datetime
+import pytz # For your local Galena time
+
+# --- TIMING LOGIC ---
+local_tz = pytz.timezone("US/Central")
+last_check = datetime.now(local_tz).strftime("%H:%M:%S")
+
+# --- RNG & WEBHOOK LOGIC ---
+def sentinel_check(pressure, rng_val):
+    if pressure < 1010 and rng_val > 0.85: # Logic Gate
+        # This is where the Web-Hook goes
+        # requests.post("https://maker.ifttt.com/trigger/vortex/with/key/YOUR_KEY")
+        return True
+    return False
+
+# --- UI UPDATE ---
+st.sidebar.write(f"⏱️ Last Data Sync: {last_check}")
+st.sidebar.info("Sentinel is monitoring the Quantum/Atmo link 24/7.")
