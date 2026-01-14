@@ -47,9 +47,20 @@ search_query = st.text_input("🔍 Monitor Location:", "Galena, KS")
 with st.sidebar.expander("🌐 Manual Coordinate Override"):
     manual_lat = st.number_input("Lat:", value=0.0, format="%.2f")
     manual_lon = st.number_input("Lon:", value=0.0, format="%.2f")
-    if st.checkbox("Use Manual Coordinates"):
-        lat, lon = manual_lat, manual_lon
-        city_name = f"Point ({lat}, {lon})"
+    use_manual = st.checkbox("Use Manual Coordinates")
+
+# --- SELECT THE LOCATION ---
+loc = get_coords(search_query)
+
+if use_manual:
+    lat, lon = manual_lat, manual_lon
+    city_name = f"Point ({lat}, {lon})"
+    tz_name = "UTC" # Default to UTC for ocean/manual points
+elif loc:
+    lat, lon, city_name, tz_name = loc
+else:
+    st.error("Location not found. Please search again or use manual coords.")
+    st.stop()
 
 loc = get_coords(search_query)
 if loc:
