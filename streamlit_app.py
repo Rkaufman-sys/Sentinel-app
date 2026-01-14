@@ -42,6 +42,13 @@ def send_push(token, score, city):
 st.title("📡 PROJECT SENTINEL")
 pb_token = st.sidebar.text_input("🔑 Pushbullet Token", type="password")
 search_query = st.text_input("🔍 Monitor Location:", "Galena, KS")
+# --- MANUAL COORDINATE OVERRIDE ---
+with st.sidebar.expander("🌐 Manual Coordinate Override"):
+    manual_lat = st.number_input("Lat:", value=0.0, format="%.2f")
+    manual_lon = st.number_input("Lon:", value=0.0, format="%.2f")
+    if st.checkbox("Use Manual Coordinates"):
+        lat, lon = manual_lat, manual_lon
+        city_name = f"Point ({lat}, {lon})"
 
 loc = get_coords(search_query)
 if loc:
