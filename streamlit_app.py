@@ -5,73 +5,83 @@ import pandas as pd
 from datetime import datetime
 import pytz
 
-st.set_page_config(page_title="SENTINEL", layout="centered")
+st.set_page_config(page_title="SENTINEL UNIVERSAL", layout="centered")
 
-# 1. LIGHTWEIGHT DATA FETCH
-@st.cache_data(ttl=60)
-def get_data():
-    # Fetch Pressure
+# --- 1. LOCATION SEARCH ENGINE ---
+def get_coords(location_query):
+    # This uses Open-Meteo's free geocoding API
+    geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={location_query}&count=1&language=en&format=json"
     try:
-        atmo = requests.get("https://api.open-meteo.com/v1/forecast?latitude=37.07&longitude=-94.63&current_weather=true&hourly=surface_pressure").json()
+        res = requests.get(geo_url).json()
+        if "results" in res:
+            data = res["results"][0]
+            return data["latitude"], data["longitude"], data["name"], data["timezone"]
+    except:
+        pass
+    return None
+
+# --- 2. DATA ENGINE ---
+@st.cache_data(ttl=60)
+def get_sentinel_data(lat, lon):
+    try:
+        atmo = requests.get(f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=surface_pressure").json()
         pres = atmo['hourly']['surface_pressure'][-1]
         wnd = atmo['current_weather']['windspeed']
     except: pres, wnd = 1013.25, 0.0
     
-    # Fetch Quantum RNG
     try:
         q = requests.get("https://qrng.anu.edu.au/API/jsonI.php?length=5&type=uint8", timeout=5).json()
         rng = np.var(q['data']) / 1000
     except: rng = 0.4288
     return rng, pres, wnd
 
-rng, pres, wnd = get_data()
-timestamp = datetime.now(pytz.timezone("US/Central")).strftime("%H:%M:%S")
-
-# --- VORTEX MATH ---
-# Formula: (Standard Pres - Current Pres) * Chaos Factor
-# If pressure is high (1020), risk is 0. If pressure drops (990), risk spikes.
-pressure_drop = 1013.25 - pres
-if pressure_drop < 0: pressure_drop = 0 # No risk if high pressure
-risk_score = pressure_drop * rng * 2 # Scaling factor
-if risk_score > 100: risk_score = 100
-if risk_score < 0: risk_score = 0
-
-# 2. UI DISPLAY
+# --- 3. UI LAYOUT ---
 st.title("📡 PROJECT SENTINEL")
-st.sidebar.write(f"⏱️ Sync: {timestamp}")
+st.write("### Universal Early Warning System")
 
-# Top Metrics
-c1, c2, c3 = st.columns(3)
-c1.metric("RNG Var", f"{rng:.4f}")
-c2.metric("Pressure", f"{pres:.1f}")
-c3.metric("Wind", f"{wnd}")
+# THE SEARCH BAR
+search_query = st.text_input("🔍 Enter Town or Zip Code:", "Galena, KS")
+location_data = get_coords(search_query)
 
-st.divider()
+if location_data:
+    lat, lon, city_name, tz_name = location_data
+    rng, pres, wnd = get_sentinel_data(lat, lon)
+    timestamp = datetime.now(pytz.timezone(tz_name)).strftime("%H:%M:%S")
 
-# PROBABILITY BAR
-st.subheader("🌪️ Vortex Probability")
-st.progress(int(risk_score))
-st.caption(f"Current Threat Level: {risk_score:.1f}%")
+    st.sidebar.success(f"Locked onto: {city_name}")
+    st.sidebar.write(f"⏱️ Local Time: {timestamp}")
 
-if risk_score > 50:
-    st.error("🚨 HIGH ALERT: ATMOSPHERIC INSTABILITY")
-elif risk_score > 20:
-    st.warning("⚠️ CAUTION: FIELD FLUX DETECTED")
-else:
-    st.success("✅ FIELD COHERENCE STABLE")
+    # Metrics
+    c1, c2, c3 = st.columns(3)
+    c1.metric("RNG Var", f"{rng:.4f}")
+    c2.metric("Pressure", f"{pres:.1f}")
+    c3.metric("Wind", f"{wnd}")
 
-# 3. DEFERRED AUDIO ENGINE
-st.divider()
-st.subheader("🪷 Peace Radio")
-if st.checkbox("Enable Audio Engine"):
-    mode = st.radio("Mode:", ["7.83Hz", "60Hz", "Layered"])
-    gain = st.slider("Volume", 0.0, 1.0, 0.3)
+    # Vortex Math
+    pressure_drop = 1013.25 - pres
+    if pressure_drop < 0: pressure_drop = 0
+    risk_score = pressure_drop * rng * 2 
+    if risk_score > 100: risk_score = 100
+
+    st.divider()
+    st.subheader(f"🌪️ Vortex Probability: {city_name}")
+    st.progress(int(risk_score))
     
-    if st.button("Broadcast"):
+    if risk_score > 50: st.error(f"🚨 ALERT: HIGH INSTABILITY IN {city_name.upper()}")
+    elif risk_score > 20: st.warning("⚠️ FIELD FLUX DETECTED")
+    else: st.success("✅ FIELD COHERENCE STABLE")
+
+else:
+    st.warning("Please enter a valid location to begin monitoring.")
+
+# --- 4. PEACE RADIO ---
+st.divider()
+if st.checkbox("Enable Peace Radio (Harmonic Anchor)"):
+    mode = st.radio("Mode:", ["7.83Hz", "60Hz", "Layered"])
+    if st.button("Broadcast Tone"):
         t = np.linspace(0, 5, int(44100 * 5), False)
+        gain = 0.3
         if mode == "7.83Hz": note = np.sin(7.83 * t * 2 * np.pi) * gain
         elif mode == "60Hz": note = np.sin(60.0 * t * 2 * np.pi) * gain
         else: note = (np.sin(7.83 * t * 2 * np.pi) * 0.7 + np.sin(60.0 * t * 2 * np.pi) * 0.3) * gain
         st.audio(note, sample_rate=44100)
-
-st.table(pd.DataFrame({'Metric': ['RNG', 'Pressure', 'Wind', 'Risk %'], 'Value': [rng, pres, wnd, risk_score]}))
