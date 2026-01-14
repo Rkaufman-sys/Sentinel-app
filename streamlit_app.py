@@ -32,7 +32,7 @@ timestamp = datetime.now(pytz.timezone("US/Central")).strftime("%H:%M:%S")
 # If pressure is high (1020), risk is 0. If pressure drops (990), risk spikes.
 pressure_drop = 1013.25 - pres
 if pressure_drop < 0: pressure_drop = 0 # No risk if high pressure
-risk_score = pressure_drop * rng * 10 # Scaling factor
+risk_score = pressure_drop * rng * 2 # Scaling factor
 if risk_score > 100: risk_score = 100
 if risk_score < 0: risk_score = 0
 
