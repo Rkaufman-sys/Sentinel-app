@@ -37,7 +37,7 @@ def get_live_sentinel_data():
 
 # --- DASHBOARD LAYOUT ---
 col1, col2, col3 = st.columns(3)
-rng, pres, wnd = get_data()
+rng, pres = get_live_sentinel_data()
 
 with col1:
     st.metric("RNG Variance", f"{rng:.4f}", delta="-0.0012")
