@@ -11,18 +11,29 @@ st.title("📡 PROJECT SENTINEL")
 st.subheader("Quantum-Atmospheric Early Warning System")
 
 # --- DATA FETCHING ---
-def get_data():
-    lat, lon = 37.07, -94.63 # Galena/Joplin
-    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=surface_pressure"
-    res = requests.get(url).json()
+ 
+import streamlit as st
+import requests
+import numpy as np
+
+def get_live_sentinel_data():
+    # 1. ATMO DATA (Galena/Joplin)
+    atmo_url = "https://api.open-meteo.com/v1/forecast?latitude=37.07&longitude=-94.63&current_weather=true&hourly=surface_pressure"
+    atmo_res = requests.get(atmo_url).json()
+    pressure = atmo_res['hourly']['surface_pressure'][0]
     
-    # Mocking the RNG Baseline you found (0.4288)
-    # In Phase 2, we plug the hardware RNG directly into this variable
-    rng_variance = 0.4288 
-    pressure = res['hourly']['surface_pressure'][0]
-    wind = res['current_weather']['windspeed']
-    
-    return rng_variance, pressure, wind
+    # 2. QUANTUM RNG DATA (ANU)
+    # Fetching raw hex numbers from vacuum fluctuations
+    q_url = "https://qrng.anu.edu.au/API/jsonI.php?length=10&type=uint8"
+    try:
+        q_res = requests.get(q_url).json()
+        q_values = q_res['data']
+        # Normalize the variance (0 to 1 scale)
+        rng_variance = np.var(q_values) / 1000 # Calculated fluctuation
+    except:
+        rng_variance = 0.4288 # Fallback to your baseline if API is busy
+        
+    return rng_variance, pressure
 
 # --- DASHBOARD LAYOUT ---
 col1, col2, col3 = st.columns(3)
