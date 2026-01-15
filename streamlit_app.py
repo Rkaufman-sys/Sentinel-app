@@ -102,3 +102,19 @@ if st.button("🚨 TEST ANDROID NOTIFICATION"):
 st.divider()
 if st.checkbox("Show Technical Data"):
     st.table(pd.DataFrame({'Metric': ['RNG', 'Pressure', 'Wind', 'Lat/Lon'], 'Value': [rng, pres, wnd, f"{lat}, {lon}"]}))
+
+# --- PEACE RADIO & DATA ARCHIVE ---
+st.divider()
+with st.expander("📻 PEACE RADIO / COMMS FEED"):
+    st.write("📡 *Scanning global frequencies... Status: CLEAR*")
+    st.info("Currently monitoring: VLF Atmospheric Noise & Global RNG Baseline")
+    # This is where you can embed an audio stream or a scrolling news ticker in the future
+    st.audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3") # Placeholder Audio
+
+if st.checkbox("📊 Show Technical Data Archive"):
+    st.subheader("Raw Sensor Output")
+    data_log = pd.DataFrame({
+        'Metric': ['Quantum RNG Variance', 'Surface Pressure', 'Wind Velocity', 'Geographic Lock'],
+        'Current Value': [f"{rng:.4f}", f"{pres:.1f} mb", f"{wnd} mph", f"{lat}, {lon}"]
+    })
+    st.table(data_log)
